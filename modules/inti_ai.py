@@ -83,7 +83,7 @@ def responder_inti(
     historial: list,
     api_key: str,
     contexto: str = "",
-    modelo: str = "gemini-2.5-flash"
+    modelo: str = "gemini-3.5-flash-lite"
 ):
     """
     Genera una respuesta de INTI mediante Gemini.
