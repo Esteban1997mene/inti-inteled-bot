@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+from pathlib import Path
 
 from modules.inti_ai import responder_inti
 
@@ -17,25 +18,34 @@ st.set_page_config(
 
 
 # ============================================================
+# RUTAS
+# ============================================================
+
+LOGO_PATH = "assets/logo_intiled.png"
+INTI_AVATAR_PATH = "assets/inti_avatar.png"
+
+
+# ============================================================
 # COLORES CORPORATIVOS
 # ============================================================
 
 NARANJA = "#F56600"
+NARANJA_OSCURO = "#D94F00"
 NARANJA_CLARO = "#FFF1E7"
-NARANJA_SUAVE = "#FFF7F2"
 
 OSCURO = "#111820"
 OSCURO_2 = "#1B2530"
 
 TEXTO = "#17202A"
 GRIS = "#667085"
-BORDE = "#E7E9ED"
+
+BORDE = "#E5E7EB"
 FONDO = "#F6F7F9"
 BLANCO = "#FFFFFF"
 
 
 # ============================================================
-# ESTILOS
+# CSS
 # ============================================================
 
 st.markdown(
@@ -43,26 +53,62 @@ st.markdown(
 <style>
 
 /* =========================================================
-   GENERAL
+   TIPOGRAFÍA GENERAL
+========================================================= */
+
+html,
+body,
+[class*="css"] {{
+    font-size: 17px;
+}}
+
+p {{
+    font-size: 17px;
+    line-height: 1.65;
+}}
+
+li {{
+    font-size: 17px;
+    line-height: 1.6;
+}}
+
+.stMarkdown {{
+    font-size: 17px;
+}}
+
+
+/* =========================================================
+   APLICACIÓN
 ========================================================= */
 
 .stApp {{
     background:
         radial-gradient(
-            circle at 85% 0%,
-            rgba(245,102,0,0.08),
-            transparent 28%
+            circle at 88% 0%,
+            rgba(245, 102, 0, 0.10),
+            transparent 25%
         ),
-        #F6F7F9;
+        linear-gradient(
+            180deg,
+            #FFFFFF 0%,
+            #F7F8FA 25%,
+            #F5F6F8 100%
+        );
 }}
+
 
 .block-container {{
     max-width: 1500px;
-    padding-top: 1.4rem;
+
+    padding-top: 1.5rem;
     padding-bottom: 2rem;
+
     padding-left: 2rem;
     padding-right: 2rem;
 }}
+
+
+/* Ocultar elementos de Streamlit */
 
 #MainMenu {{
     visibility: hidden;
@@ -74,61 +120,130 @@ footer {{
 
 
 /* =========================================================
+   TÍTULOS
+========================================================= */
+
+h1 {{
+    color: {OSCURO};
+
+    font-weight: 800;
+
+    letter-spacing: -0.5px;
+}}
+
+h2 {{
+    color: {OSCURO};
+
+    font-weight: 750;
+}}
+
+h3 {{
+    color: {OSCURO};
+
+    font-weight: 700;
+}}
+
+
+/* =========================================================
    SIDEBAR
 ========================================================= */
 
 [data-testid="stSidebar"] {{
+
     background:
         radial-gradient(
-            circle at 50% 85%,
-            rgba(245,102,0,0.24),
-            transparent 35%
+            circle at 50% 88%,
+            rgba(245,102,0,0.35),
+            transparent 32%
         ),
         linear-gradient(
             180deg,
-            {OSCURO} 0%,
-            {OSCURO_2} 100%
+            #111820 0%,
+            #18222D 65%,
+            #111820 100%
         );
 
-    border-right: 1px solid rgba(255,255,255,0.05);
+    border-right:
+        1px solid rgba(255,255,255,0.05);
 }}
+
 
 [data-testid="stSidebar"] * {{
     color: white;
 }}
 
+
 [data-testid="stSidebar"] .block-container {{
-    padding-top: 1.5rem;
+    padding-top: 1.4rem;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
 }}
+
+
+[data-testid="stSidebar"] p {{
+    font-size: 16px;
+}}
+
 
 [data-testid="stSidebar"] hr {{
-    border-color: rgba(255,255,255,0.10);
+
+    border: none;
+
+    border-top:
+        1px solid rgba(255,255,255,0.12);
 }}
 
 
-/* Botones sidebar */
+/* =========================================================
+   BOTONES SIDEBAR
+========================================================= */
 
-[data-testid="stSidebar"] .stButton > button {{
+[data-testid="stSidebar"]
+.stButton > button {{
+
     background: transparent;
-    color: white;
-    border: 1px solid transparent;
-    border-radius: 12px;
 
-    min-height: 48px;
+    color: white;
+
+    border:
+        1px solid transparent;
+
+    border-radius: 13px;
+
+    min-height: 52px;
+
+    font-size: 16px;
+
+    font-weight: 600;
 
     text-align: left;
 
-    font-weight: 500;
-
-    transition: all 0.2s ease;
+    transition:
+        all 0.20s ease;
 }}
 
-[data-testid="stSidebar"] .stButton > button:hover {{
-    background: rgba(245,102,0,0.15);
-    border-color: rgba(245,102,0,0.30);
+
+[data-testid="stSidebar"]
+.stButton > button:hover {{
+
+    background:
+        linear-gradient(
+            90deg,
+            {NARANJA},
+            #FF7A00
+        );
+
+    border-color:
+        {NARANJA};
+
     color: white;
 
-    transform: translateX(3px);
+    transform:
+        translateX(3px);
+
+    box-shadow:
+        0 8px 22px
+        rgba(245,102,0,0.22);
 }}
 
 
@@ -137,37 +252,47 @@ footer {{
 ========================================================= */
 
 .stButton > button {{
+
     width: 100%;
 
-    border-radius: 14px;
+    min-height: 58px;
 
-    border: 1px solid {BORDE};
+    border-radius: 15px;
+
+    border:
+        1px solid {BORDE};
 
     background: white;
 
-    min-height: 52px;
-
-    font-weight: 600;
-
     color: {TEXTO};
 
-    transition: all 0.20s ease;
+    font-size: 16px;
+
+    font-weight: 650;
+
+    transition:
+        all 0.20s ease;
 
     box-shadow:
-        0 4px 14px
-        rgba(16,24,40,0.04);
+        0 5px 18px
+        rgba(16,24,40,0.045);
 }}
 
+
 .stButton > button:hover {{
-    border-color: {NARANJA};
 
-    color: {NARANJA};
+    border-color:
+        {NARANJA};
 
-    transform: translateY(-2px);
+    color:
+        {NARANJA};
+
+    transform:
+        translateY(-2px);
 
     box-shadow:
-        0 8px 24px
-        rgba(16,24,40,0.08);
+        0 10px 25px
+        rgba(16,24,40,0.09);
 }}
 
 
@@ -176,60 +301,136 @@ footer {{
 ========================================================= */
 
 [data-testid="stChatMessage"] {{
-    background: white;
+
+    background:
+        rgba(255,255,255,0.96);
 
     border:
         1px solid {BORDE};
 
-    border-radius: 18px;
+    border-radius:
+        18px;
 
-    padding: 16px 18px;
+    padding:
+        18px 20px;
 
-    margin-bottom: 12px;
+    margin-bottom:
+        14px;
 
     box-shadow:
-        0 4px 18px
-        rgba(16,24,40,0.035);
+        0 5px 20px
+        rgba(16,24,40,0.04);
+}}
+
+
+[data-testid="stChatMessage"] p {{
+
+    font-size:
+        17px;
+
+    line-height:
+        1.68;
 }}
 
 
 /* =========================================================
-   FORMULARIO MENSAJE
+   FORMULARIO DE MENSAJE
 ========================================================= */
 
 [data-testid="stForm"] {{
-    background: white;
+
+    background:
+        white;
 
     border:
         1px solid {BORDE};
 
-    border-radius: 18px;
+    border-radius:
+        19px;
 
-    padding: 12px 14px;
+    padding:
+        14px;
 
     box-shadow:
-        0 8px 25px
-        rgba(16,24,40,0.06);
+        0 10px 30px
+        rgba(16,24,40,0.07);
 }}
 
-.stTextInput input {{
-    border-radius: 14px;
 
-    min-height: 48px;
+.stTextInput input {{
+
+    min-height:
+        52px;
+
+    border-radius:
+        14px;
 
     border:
-        1px solid #E3E6EA;
+        1px solid #E1E5EA;
 
     background:
         #FAFBFC;
+
+    font-size:
+        17px;
 }}
 
+
 .stTextInput input:focus {{
-    border-color: {NARANJA};
+
+    border-color:
+        {NARANJA};
 
     box-shadow:
-        0 0 0 2px
+        0 0 0 3px
         rgba(245,102,0,0.10);
+}}
+
+
+/* Botón de enviar dentro del formulario */
+
+[data-testid="stFormSubmitButton"]
+button {{
+
+    background:
+        linear-gradient(
+            135deg,
+            {NARANJA},
+            #FF7A00
+        );
+
+    color:
+        white;
+
+    border:
+        none;
+
+    font-size:
+        22px;
+
+    min-height:
+        52px;
+
+    box-shadow:
+        0 7px 18px
+        rgba(245,102,0,0.22);
+}}
+
+
+[data-testid="stFormSubmitButton"]
+button:hover {{
+
+    color:
+        white;
+
+    border:
+        none;
+
+    background:
+        {NARANJA_OSCURO};
+
+    transform:
+        translateY(-1px);
 }}
 
 
@@ -238,30 +439,32 @@ footer {{
 ========================================================= */
 
 [data-testid="stExpander"] {{
-    background: white;
+
+    background:
+        white;
 
     border:
         1px solid {BORDE};
 
-    border-radius: 14px;
+    border-radius:
+        15px;
 
-    overflow: hidden;
+    overflow:
+        hidden;
 }}
 
 
 /* =========================================================
-   MÉTRICAS / ESTADO
+   ALERTAS
 ========================================================= */
 
-[data-testid="stMetric"] {{
-    background: white;
+[data-testid="stAlert"] {{
 
-    padding: 12px;
+    border-radius:
+        14px;
 
-    border-radius: 14px;
-
-    border:
-        1px solid {BORDE};
+    font-size:
+        16px;
 }}
 
 
@@ -270,23 +473,18 @@ footer {{
 ========================================================= */
 
 hr {{
-    border: none;
+
+    border:
+        none;
 
     border-top:
-        1px solid #E7E9ED;
+        1px solid #E4E7EB;
 
-    margin-top: 1.2rem;
+    margin-top:
+        1.3rem;
 
-    margin-bottom: 1.2rem;
-}}
-
-
-/* =========================================================
-   LINKS
-========================================================= */
-
-a {{
-    color: {NARANJA};
+    margin-bottom:
+        1.3rem;
 }}
 
 
@@ -296,9 +494,30 @@ a {{
 
 @media (max-width: 900px) {{
 
+    html,
+    body,
+    [class*="css"] {{
+        font-size: 16px;
+    }}
+
+
     .block-container {{
-        padding-left: 1rem;
-        padding-right: 1rem;
+
+        padding-left:
+            1rem;
+
+        padding-right:
+            1rem;
+
+        padding-top:
+            1rem;
+    }}
+
+
+    [data-testid="stChatMessage"] p {{
+
+        font-size:
+            16px;
     }}
 
 }}
@@ -310,6 +529,19 @@ a {{
 
 
 # ============================================================
+# VERIFICACIÓN DE ARCHIVOS
+# ============================================================
+
+logo_existe = Path(
+    LOGO_PATH
+).exists()
+
+avatar_existe = Path(
+    INTI_AVATAR_PATH
+).exists()
+
+
+# ============================================================
 # API KEY
 # ============================================================
 
@@ -317,6 +549,7 @@ api_key = st.secrets.get(
     "GEMINI_API_KEY",
     ""
 )
+
 
 if not api_key:
 
@@ -329,29 +562,35 @@ if not api_key:
 
 
 # ============================================================
-# ESTADO DE SESIÓN
+# MENSAJE INICIAL
+# ============================================================
+
+MENSAJE_INICIAL = {
+
+    "role": "assistant",
+
+    "content":
+        "¡Hola! 👋 Soy **INTI**, el asistente virtual "
+        "de **INTILED**.\n\n"
+        "Estoy aquí para orientarte sobre nuestros servicios, "
+        "proyectos y soluciones energéticas.\n\n"
+        "**¿En qué puedo ayudarte hoy?**"
+}
+
+
+# ============================================================
+# SESSION STATE
 # ============================================================
 
 if "messages" not in st.session_state:
 
     st.session_state.messages = [
-
-        {
-            "role": "assistant",
-
-            "content":
-                "¡Hola! 👋 Soy **INTI**, el asistente virtual "
-                "de **INTILED**.\n\n"
-                "Estoy aquí para orientarte sobre nuestros "
-                "servicios, proyectos y soluciones energéticas.\n\n"
-                "**¿En qué puedo ayudarte hoy?**"
-        }
-
+        MENSAJE_INICIAL.copy()
     ]
 
 
 # ============================================================
-# FUNCIÓN PRINCIPAL DEL CHAT
+# PROCESAR MENSAJE
 # ============================================================
 
 def procesar_mensaje(pregunta):
@@ -359,9 +598,18 @@ def procesar_mensaje(pregunta):
     if not pregunta:
         return
 
+
+    pregunta = pregunta.strip()
+
+
+    if not pregunta:
+        return
+
+
     historial_anterior = list(
         st.session_state.messages
     )
+
 
     st.session_state.messages.append(
         {
@@ -370,13 +618,19 @@ def procesar_mensaje(pregunta):
         }
     )
 
+
     try:
 
         respuesta = responder_inti(
+
             pregunta=pregunta,
+
             historial=historial_anterior,
+
             api_key=api_key
+
         )
+
 
     except Exception:
 
@@ -385,6 +639,7 @@ def procesar_mensaje(pregunta):
             "al procesar tu consulta. "
             "Por favor intenta nuevamente."
         )
+
 
     st.session_state.messages.append(
         {
@@ -400,20 +655,41 @@ def procesar_mensaje(pregunta):
 
 with st.sidebar:
 
-    st.markdown(
-        "# 🟠 INTILED"
-    )
+
+    # --------------------------------------------------------
+    # LOGO
+    # --------------------------------------------------------
+
+    if logo_existe:
+
+        st.image(
+            LOGO_PATH,
+            use_container_width=True
+        )
+
+    else:
+
+        st.markdown(
+            "# 🟠 INTILED"
+        )
+
 
     st.caption(
         "Soluciones que iluminan el futuro"
     )
 
+
     st.divider()
 
 
+    # --------------------------------------------------------
+    # NAVEGACIÓN
+    # --------------------------------------------------------
+
     if st.button(
         "💬   Chat con INTI",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_chat"
     ):
 
         pass
@@ -421,11 +697,13 @@ with st.sidebar:
 
     if st.button(
         "💡   Servicios",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_servicios"
     ):
 
         procesar_mensaje(
-            "Quiero conocer los servicios que ofrece INTILED."
+            "Quiero conocer los servicios "
+            "que ofrece INTILED."
         )
 
         st.rerun()
@@ -433,11 +711,13 @@ with st.sidebar:
 
     if st.button(
         "📄   Cotización",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_cotizacion"
     ):
 
         procesar_mensaje(
-            "Quiero solicitar una cotización para un proyecto."
+            "Quiero solicitar una cotización "
+            "para un proyecto."
         )
 
         st.rerun()
@@ -445,11 +725,13 @@ with st.sidebar:
 
     if st.button(
         "📅   Agendar cita",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_cita"
     ):
 
         procesar_mensaje(
-            "Quiero solicitar una reunión o visita técnica."
+            "Quiero solicitar una reunión "
+            "o visita técnica."
         )
 
         st.rerun()
@@ -457,11 +739,13 @@ with st.sidebar:
 
     if st.button(
         "🎧   PQR / PQRS",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_pqr"
     ):
 
         procesar_mensaje(
-            "Necesito orientación para presentar una PQR o PQRS."
+            "Necesito orientación para presentar "
+            "una PQR o PQRS."
         )
 
         st.rerun()
@@ -469,11 +753,13 @@ with st.sidebar:
 
     if st.button(
         "ⓘ   Acerca de INTILED",
-        use_container_width=True
+        use_container_width=True,
+        key="sidebar_acerca"
     ):
 
         procesar_mensaje(
-            "Cuéntame sobre INTILED."
+            "Cuéntame sobre INTILED, "
+            "su enfoque y sus servicios."
         )
 
         st.rerun()
@@ -482,13 +768,27 @@ with st.sidebar:
     st.divider()
 
 
+    # --------------------------------------------------------
+    # PERSONAJE INTI
+    # --------------------------------------------------------
+
+    if avatar_existe:
+
+        st.image(
+            INTI_AVATAR_PATH,
+            use_container_width=True
+        )
+
+
     st.markdown(
-        "### 👷🏻‍♂️ INTI"
+        "## INTI"
     )
+
 
     st.write(
         "**Tu aliado en soluciones energéticas.**"
     )
+
 
     st.caption(
         "Eficiencia energética · Energía solar · "
@@ -500,25 +800,38 @@ with st.sidebar:
 
 
     st.markdown(
-        "🌱 **Comprometidos con un futuro más sostenible.**"
+        "🌱 **Comprometidos con un futuro "
+        "más sostenible.**"
     )
 
 
 # ============================================================
-# ENCABEZADO
+# ENCABEZADO PRINCIPAL
 # ============================================================
 
-header_logo, header_texto, header_estado = st.columns(
+header_avatar, header_texto, header_estado = st.columns(
+
     [1, 5, 1.5],
+
     vertical_alignment="center"
+
 )
 
 
-with header_logo:
+with header_avatar:
 
-    st.markdown(
-        "# 🟠"
-    )
+    if avatar_existe:
+
+        st.image(
+            INTI_AVATAR_PATH,
+            width=115
+        )
+
+    else:
+
+        st.markdown(
+            "# 👷🏻‍♂️"
+        )
 
 
 with header_texto:
@@ -528,7 +841,7 @@ with header_texto:
     )
 
     st.markdown(
-        "**Asistente Virtual de INTILED**"
+        "### Asistente Virtual de INTILED"
     )
 
     st.caption(
@@ -555,14 +868,30 @@ st.divider()
 # ACCESOS RÁPIDOS
 # ============================================================
 
-c1, c2, c3, c4 = st.columns(4)
+st.markdown(
+    "### ¿Cómo puedo ayudarte?"
+)
+
+st.caption(
+    "Selecciona una opción o conversa directamente con INTI."
+)
+
+
+c1, c2, c3, c4 = st.columns(
+    4,
+    gap="medium"
+)
 
 
 with c1:
 
     servicios = st.button(
-        "💡  Servicios\n\nConoce nuestras soluciones",
+
+        "💡 Servicios\n\n"
+        "Conoce nuestras soluciones",
+
         use_container_width=True,
+
         key="servicios_superior"
     )
 
@@ -570,8 +899,12 @@ with c1:
 with c2:
 
     cotizacion = st.button(
-        "📄  Cotización\n\nSolicita una propuesta",
+
+        "📄 Cotización\n\n"
+        "Solicita una propuesta",
+
         use_container_width=True,
+
         key="cotizacion_superior"
     )
 
@@ -579,8 +912,12 @@ with c2:
 with c3:
 
     cita = st.button(
-        "📅  Agendar cita\n\nReúnete con nuestro equipo",
+
+        "📅 Agendar cita\n\n"
+        "Reúnete con nuestro equipo",
+
         use_container_width=True,
+
         key="cita_superior"
     )
 
@@ -588,8 +925,12 @@ with c3:
 with c4:
 
     pqr = st.button(
-        "🎧  PQR / PQRS\n\nPeticiones, quejas o reclamos",
+
+        "🎧 PQR / PQRS\n\n"
+        "Peticiones, quejas o reclamos",
+
         use_container_width=True,
+
         key="pqr_superior"
     )
 
@@ -601,8 +942,8 @@ with c4:
 if servicios:
 
     procesar_mensaje(
-        "Quiero conocer los servicios y soluciones "
-        "que ofrece INTILED."
+        "Quiero conocer los servicios "
+        "y soluciones que ofrece INTILED."
     )
 
     st.rerun()
@@ -611,7 +952,8 @@ if servicios:
 if cotizacion:
 
     procesar_mensaje(
-        "Quiero solicitar una cotización para un proyecto."
+        "Quiero solicitar una cotización "
+        "para un proyecto."
     )
 
     st.rerun()
@@ -645,20 +987,25 @@ st.write("")
 # ============================================================
 
 chat_col, info_col = st.columns(
-    [3.2, 1],
+
+    [3.25, 1],
+
     gap="large"
+
 )
 
 
 # ============================================================
-# CHAT CENTRAL
+# CHAT
 # ============================================================
 
 with chat_col:
 
+
     st.markdown(
-        "### 💬 Conversa con INTI"
+        "## 💬 Conversa con INTI"
     )
+
 
     st.caption(
         "Pregúntame sobre nuestros servicios, "
@@ -666,15 +1013,26 @@ with chat_col:
     )
 
 
+    st.write("")
+
+
     # --------------------------------------------------------
-    # MENSAJES
+    # MOSTRAR CONVERSACIÓN
     # --------------------------------------------------------
 
     for mensaje in st.session_state.messages:
 
+
         if mensaje["role"] == "assistant":
 
-            avatar = "👷🏻‍♂️"
+            if avatar_existe:
+
+                avatar = INTI_AVATAR_PATH
+
+            else:
+
+                avatar = "👷🏻‍♂️"
+
 
         else:
 
@@ -682,8 +1040,11 @@ with chat_col:
 
 
         with st.chat_message(
+
             mensaje["role"],
+
             avatar=avatar
+
         ):
 
             st.markdown(
@@ -692,45 +1053,60 @@ with chat_col:
 
 
     # --------------------------------------------------------
-    # FORMULARIO DE MENSAJE
+    # FORMULARIO
     # --------------------------------------------------------
 
     st.write("")
 
+
     with st.form(
+
         "formulario_inti",
+
         clear_on_submit=True
+
     ):
 
+
         texto_col, boton_col = st.columns(
-            [7, 1],
+
+            [8, 1],
+
             vertical_alignment="bottom"
+
         )
 
 
         with texto_col:
 
             pregunta = st.text_input(
+
                 "Mensaje",
+
                 placeholder=(
                     "Escribe tu mensaje para INTI..."
                 ),
+
                 label_visibility="collapsed"
+
             )
 
 
         with boton_col:
 
             enviar = st.form_submit_button(
+
                 "➤",
+
                 use_container_width=True
+
             )
 
 
     if enviar and pregunta.strip():
 
         procesar_mensaje(
-            pregunta.strip()
+            pregunta
         )
 
         st.rerun()
@@ -740,7 +1116,7 @@ with chat_col:
     # NUEVA CONVERSACIÓN
     # --------------------------------------------------------
 
-    vacio, limpiar = st.columns(
+    espacio, limpiar = st.columns(
         [5, 2]
     )
 
@@ -748,22 +1124,17 @@ with chat_col:
     with limpiar:
 
         if st.button(
+
             "🗑️ Nueva conversación",
-            use_container_width=True
+
+            use_container_width=True,
+
+            key="nueva_conversacion"
+
         ):
 
             st.session_state.messages = [
-
-                {
-                    "role": "assistant",
-
-                    "content":
-                        "¡Hola! 👋 Soy **INTI**, "
-                        "el asistente virtual de **INTILED**.\n\n"
-                        "Estoy listo para ayudarte.\n\n"
-                        "**¿Qué necesitas hoy?**"
-                }
-
+                MENSAJE_INICIAL.copy()
             ]
 
             st.rerun()
@@ -775,14 +1146,29 @@ with chat_col:
 
 with info_col:
 
+
+    # --------------------------------------------------------
+    # SOBRE INTI
+    # --------------------------------------------------------
+
     st.markdown(
-        "### 👷🏻‍♂️ Sobre INTI"
+        "### Sobre INTI"
     )
 
+
+    if avatar_existe:
+
+        st.image(
+            INTI_AVATAR_PATH,
+            width=125
+        )
+
+
     st.write(
-        "Soy **INTI**, el asistente virtual de "
-        "**INTILED**."
+        "Soy **INTI**, el asistente virtual "
+        "de **INTILED**."
     )
+
 
     st.caption(
         "Puedo orientarte sobre nuestros servicios, "
@@ -793,30 +1179,41 @@ with info_col:
     st.divider()
 
 
+    # --------------------------------------------------------
+    # CONTACTO
+    # --------------------------------------------------------
+
     st.markdown(
-        "### 📍 Contacto"
+        "### 📍 Información de contacto"
     )
+
 
     st.write(
         "**INTILED S.A.S. BIC**"
     )
 
-    st.caption(
-        "Calle 11 #36-46\n\n"
-        "La Castellana\n\n"
-        "Pasto, Nariño"
+
+    st.write(
+        "📍 Calle 11 #36-46, La Castellana"
     )
 
 
-    st.markdown(
+    st.caption(
+        "Pasto, Nariño, Colombia"
+    )
+
+
+    st.write(
         "📞 **+57 602 733 7893**"
     )
 
-    st.markdown(
+
+    st.write(
         "📱 **+57 304 670 2584**"
     )
 
-    st.markdown(
+
+    st.write(
         "✉️ **comercial@intiled.com.co**"
     )
 
@@ -824,14 +1221,29 @@ with info_col:
     st.divider()
 
 
+    # --------------------------------------------------------
+    # HORARIOS
+    # --------------------------------------------------------
+
     st.markdown(
-        "### 🕐 Horario"
+        "### 🕐 Horario de atención"
+    )
+
+
+    st.write(
+        "**Lunes a viernes**"
     )
 
     st.caption(
-        "Lunes a viernes\n\n"
-        "8:00 a. m. – 6:00 p. m.\n\n"
-        "Sábados\n\n"
+        "8:00 a. m. – 6:00 p. m."
+    )
+
+
+    st.write(
+        "**Sábados**"
+    )
+
+    st.caption(
         "8:00 a. m. – 12:00 p. m."
     )
 
@@ -839,9 +1251,14 @@ with info_col:
     st.divider()
 
 
+    # --------------------------------------------------------
+    # SOLUCIONES
+    # --------------------------------------------------------
+
     st.markdown(
         "### ☀️ Soluciones que iluminan el futuro"
     )
+
 
     st.caption(
         "Eficiencia energética, energía solar, "
@@ -856,28 +1273,51 @@ with info_col:
 st.divider()
 
 
-f1, f2, f3, f4, f5 = st.columns(5)
+f1, f2, f3, f4, f5 = st.columns(
+    5
+)
 
 
 with f1:
-    st.caption("🍃 Eficiencia energética")
+
+    st.caption(
+        "🍃 Eficiencia energética"
+    )
+
 
 with f2:
-    st.caption("☀️ Energía solar")
+
+    st.caption(
+        "☀️ Energía solar"
+    )
+
 
 with f3:
-    st.caption("⚙️ Infraestructura eléctrica")
+
+    st.caption(
+        "⚙️ Infraestructura eléctrica"
+    )
+
 
 with f4:
-    st.caption("👥 Acompañamiento técnico")
+
+    st.caption(
+        "👥 Acompañamiento técnico"
+    )
+
 
 with f5:
-    st.caption("🌱 Sostenibilidad")
+
+    st.caption(
+        "🌱 Sostenibilidad"
+    )
 
 
 st.write("")
 
+
 año = datetime.now().year
+
 
 st.caption(
     f"© {año} INTILED S.A.S. BIC · "
