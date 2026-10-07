@@ -343,10 +343,9 @@ No inventes información faltante.
     # CONTROL DE ERRORES
     # --------------------------------------------------------
 
-    except Exception:
+   except Exception as e:
 
-        return (
-            "⚠️ En este momento INTI no pudo conectarse con "
-            "su servicio de inteligencia artificial. "
-            "Por favor intenta nuevamente en unos minutos."
-        )
+    return (
+        "⚠️ Error técnico de INTI:\n\n"
+        f"{str(e)}"
+    )
