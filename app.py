@@ -1,289 +1,442 @@
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
-
 from modules.inti_ai import responder_inti
 
 
 # ============================================================
-# CONFIGURACIÓN GENERAL
+# CONFIGURACIÓN
 # ============================================================
 
 st.set_page_config(
-    page_title="INTI | Asistente Virtual INTILED",
-    page_icon="🟠",
+    page_title="INTI | INTILED",
+    page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
+LOGO = "assets/logo_intiled.png"
+AVATAR = "assets/inti_avatar.png"
 
-# ============================================================
-# RUTAS
-# ============================================================
-
-LOGO_PATH = "assets/logo_intiled.png"
-INTI_AVATAR_PATH = "assets/inti_avatar.png"
+logo_ok = Path(LOGO).exists()
+avatar_ok = Path(AVATAR).exists()
 
 
 # ============================================================
-# COLORES CORPORATIVOS
+# PALETA
 # ============================================================
 
-NARANJA = "#F56600"
-NARANJA_OSCURO = "#D94F00"
-NARANJA_CLARO = "#FFF1E7"
-
-OSCURO = "#111820"
-OSCURO_2 = "#1B2530"
-
-TEXTO = "#17202A"
-GRIS = "#667085"
-
-BORDE = "#E5E7EB"
-FONDO = "#F6F7F9"
-BLANCO = "#FFFFFF"
+ORANGE = "#FF6500"
+ORANGE_2 = "#FF8A00"
+DARK = "#0B1016"
+DARK_2 = "#111923"
+TEXT = "#101828"
+MUTED = "#667085"
+BORDER = "#E7E9EE"
 
 
 # ============================================================
-# CSS REFORZADO (!important PARA FORZAR ESTILOS EN STREAMLIT)
+# CSS — INTI EXPERIENCE V2
 # ============================================================
 
 st.markdown(
     f"""
 <style>
 
-/* =========================================================
-   TIPOGRAFÍA GENERAL
-========================================================= */
+/* ---------------------------------------------------------
+   RESET / GLOBAL
+--------------------------------------------------------- */
 
-html, body, [class*="css"] {{
-    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
-    font-size: 16px !important;
-    color: {TEXTO} !important;
+html {{
+    scroll-behavior: smooth;
 }}
 
-p, li, .stMarkdown {{
-    font-size: 16px !important;
-    line-height: 1.6 !important;
+html, body, [class*="css"] {{
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}}
+
+.stApp {{
+    background:
+        radial-gradient(
+            circle at 82% 0%,
+            rgba(255,101,0,.13),
+            transparent 26%
+        ),
+        radial-gradient(
+            circle at 18% 70%,
+            rgba(255,138,0,.055),
+            transparent 28%
+        ),
+        linear-gradient(
+            180deg,
+            #FFFFFF 0%,
+            #F8F9FB 48%,
+            #F4F6F8 100%
+        );
+    color: {TEXT};
 }}
 
 .block-container {{
-    max-width: 1400px !important;
-    padding-top: 1.8rem !important;
-    padding-bottom: 2rem !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
+    max-width: 1380px;
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+    padding-left: 2.2rem;
+    padding-right: 2.2rem;
 }}
 
-/* Ocultar elementos predeterminados de Streamlit */
-#MainMenu, footer, header {{
-    visibility: hidden !important;
+#MainMenu {{
+    visibility: hidden;
+}}
+
+footer {{
+    visibility: hidden;
+}}
+
+header[data-testid="stHeader"] {{
+    background: transparent;
 }}
 
 
-/* =========================================================
-   TÍTULOS
-========================================================= */
+/* ---------------------------------------------------------
+   TIPOGRAFÍA
+--------------------------------------------------------- */
 
 h1 {{
-    color: {OSCURO} !important;
+    font-size: 3rem !important;
     font-weight: 800 !important;
-    letter-spacing: -0.5px !important;
+    letter-spacing: -1.7px !important;
+    color: {DARK} !important;
 }}
 
 h2 {{
-    color: {OSCURO} !important;
-    font-weight: 750 !important;
+    font-size: 2rem !important;
+    font-weight: 780 !important;
+    letter-spacing: -.8px !important;
+    color: {DARK} !important;
 }}
 
 h3 {{
-    color: {OSCURO} !important;
-    font-weight: 700 !important;
+    font-size: 1.3rem !important;
+    font-weight: 720 !important;
+    color: {DARK} !important;
+}}
+
+p {{
+    font-size: 17px;
+    line-height: 1.7;
+}}
+
+small {{
+    color: {MUTED};
 }}
 
 
-/* =========================================================
-   SIDEBAR ELEGANTE
-========================================================= */
+/* ---------------------------------------------------------
+   SIDEBAR
+--------------------------------------------------------- */
 
 [data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background:
+        radial-gradient(
+            circle at 50% 95%,
+            rgba(255,101,0,.28),
+            transparent 30%
+        ),
+        linear-gradient(
+            180deg,
+            #090E13 0%,
+            #111923 58%,
+            #0A1016 100%
+        );
+
+    border-right: 1px solid rgba(255,255,255,.06);
+}}
+
+[data-testid="stSidebar"] > div:first-child {{
+    padding-top: 1.25rem;
 }}
 
 [data-testid="stSidebar"] * {{
-    color: #F8FAFC !important;
-}}
-
-[data-testid="stSidebar"] .block-container {{
-    padding-top: 1.5rem !important;
-    padding-left: 1.2rem !important;
-    padding-right: 1.2rem !important;
+    color: #FFFFFF;
 }}
 
 [data-testid="stSidebar"] p {{
-    font-size: 15px !important;
+    font-size: 15px;
 }}
 
 [data-testid="stSidebar"] hr {{
-    border: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,.09);
 }}
 
 [data-testid="stSidebar"] .stButton > button {{
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: #E2E8F0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px !important;
-    min-height: 48px !important;
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    text-align: left !important;
-    transition: all 0.25s ease !important;
-    margin-bottom: 4px !important;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: rgba(255,255,255,.84);
+    min-height: 50px;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+    transition: all .22s ease;
 }}
 
 [data-testid="stSidebar"] .stButton > button:hover {{
-    background: {NARANJA} !important;
-    border-color: {NARANJA} !important;
-    color: #FFFFFF !important;
-    transform: translateX(4px) !important;
-    box-shadow: 0 4px 14px rgba(245, 102, 0, 0.35) !important;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255,101,0,.95),
+            rgba(255,138,0,.85)
+        );
+    border-color: rgba(255,255,255,.08);
+    color: white;
+    transform: translateX(4px);
+    box-shadow: 0 8px 28px rgba(255,101,0,.22);
 }}
 
 
-/* =========================================================
-   BOTONES GENERALES / ACCESOS RÁPIDOS
-========================================================= */
+/* ---------------------------------------------------------
+   BOTONES GENERALES
+--------------------------------------------------------- */
 
 .stButton > button {{
-    width: 100% !important;
-    min-height: 64px !important;
-    border-radius: 14px !important;
-    border: 1px solid {BORDE} !important;
-    background: #FFFFFF !important;
-    color: {TEXTO} !important;
-    font-size: 15px !important;
-    font-weight: 600 !important;
-    transition: all 0.25s ease !important;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03) !important;
+    border-radius: 17px;
+    border: 1px solid {BORDER};
+    background: rgba(255,255,255,.88);
+    min-height: 64px;
+    color: {TEXT};
+    font-size: 16px;
+    font-weight: 650;
+    transition: all .22s ease;
+    box-shadow:
+        0 7px 25px rgba(16,24,40,.045);
 }}
 
 .stButton > button:hover {{
-    border-color: {NARANJA} !important;
-    color: {NARANJA} !important;
-    transform: translateY(-2px) !important;
-    box-shadow: 0 6px 18px rgba(245, 102, 0, 0.15) !important;
+    border-color: rgba(255,101,0,.65);
+    color: {ORANGE};
+    transform: translateY(-3px);
+    box-shadow:
+        0 15px 35px rgba(16,24,40,.10),
+        0 4px 15px rgba(255,101,0,.07);
 }}
 
 
-/* =========================================================
-   DIFERENCIACIÓN VISUAL EN LAS BURBUJAS DE CHAT
-========================================================= */
+/* ---------------------------------------------------------
+   CHAT MESSAGES
+--------------------------------------------------------- */
 
 [data-testid="stChatMessage"] {{
-    border-radius: 16px !important;
-    padding: 16px 20px !important;
-    margin-bottom: 12px !important;
-    border: 1px solid #E2E8F0 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
+    background: rgba(255,255,255,.91);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(226,230,235,.95);
+    border-radius: 22px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+
+    box-shadow:
+        0 7px 25px rgba(16,24,40,.045);
+
+    transition:
+        transform .18s ease,
+        box-shadow .18s ease;
 }}
 
-/* Chat del Asistente (Fondo Naranja Suave) */
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {{
-    background-color: #FFF6F0 !important;
-    border-color: #FFD2B8 !important;
+[data-testid="stChatMessage"]:hover {{
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 12px 35px rgba(16,24,40,.07);
 }}
 
-/* Chat del Usuario (Fondo Azul Grisáceo) */
-[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {{
-    background-color: #F0F5FA !important;
-    border-color: #CBD5E1 !important;
+[data-testid="stChatMessage"] p {{
+    font-size: 17px;
+    line-height: 1.72;
 }}
 
 
-/* =========================================================
-   INPUT Y FORMULARIO DE MENSAJE
-========================================================= */
+/* Avatar */
+
+[data-testid="stChatMessageAvatarUser"],
+[data-testid="stChatMessageAvatarAssistant"] {{
+    border-radius: 50%;
+    overflow: hidden;
+}}
+
+
+/* ---------------------------------------------------------
+   FORMULARIO CHAT
+--------------------------------------------------------- */
 
 [data-testid="stForm"] {{
-    background: #FFFFFF !important;
-    border: 1px solid {BORDE} !important;
-    border-radius: 18px !important;
-    padding: 10px 12px !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05) !important;
+    background:
+        rgba(255,255,255,.94);
+
+    backdrop-filter:
+        blur(20px);
+
+    border:
+        1px solid rgba(224,228,234,.95);
+
+    border-radius:
+        22px;
+
+    padding:
+        12px 14px;
+
+    box-shadow:
+        0 18px 50px rgba(16,24,40,.09),
+        0 3px 12px rgba(255,101,0,.05);
 }}
 
 .stTextInput input {{
-    min-height: 48px !important;
-    border-radius: 12px !important;
-    border: 1px solid #E2E8F0 !important;
-    background: #F8FAFC !important;
-    font-size: 16px !important;
+    min-height: 58px;
+    border: none !important;
+    border-radius: 16px;
+    background: #F7F8FA;
+    font-size: 17px;
+    padding-left: 18px;
 }}
 
 .stTextInput input:focus {{
-    border-color: {NARANJA} !important;
-    box-shadow: 0 0 0 3px rgba(245, 102, 0, 0.15) !important;
+    background: #FFFFFF;
+    box-shadow:
+        0 0 0 2px rgba(255,101,0,.13) !important;
 }}
 
+
+/* ---------------------------------------------------------
+   BOTÓN ENVIAR
+--------------------------------------------------------- */
+
 [data-testid="stFormSubmitButton"] button {{
-    background: linear-gradient(135deg, {NARANJA}, #FF7A00) !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    font-size: 20px !important;
-    min-height: 48px !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 14px rgba(245, 102, 0, 0.3) !important;
+    min-height: 58px;
+
+    border-radius: 16px;
+
+    border: none;
+
+    background:
+        linear-gradient(
+            135deg,
+            {ORANGE},
+            {ORANGE_2}
+        );
+
+    color: white;
+
+    font-size: 24px;
+
+    box-shadow:
+        0 9px 25px rgba(255,101,0,.27);
 }}
 
 [data-testid="stFormSubmitButton"] button:hover {{
-    background: {NARANJA_OSCURO} !important;
-    transform: translateY(-1px) !important;
+    color: white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ED5D00,
+            {ORANGE}
+        );
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 13px 30px rgba(255,101,0,.34);
 }}
 
 
-/* =========================================================
-   TARJETAS DEL PANEL DERECHO
-========================================================= */
+/* ---------------------------------------------------------
+   ALERTAS / STATUS
+--------------------------------------------------------- */
 
-.info-card-box {{
-    background: #FFFFFF !important;
-    border: 1px solid #E2E8F0 !important;
-    border-radius: 16px !important;
-    padding: 18px !important;
-    margin-bottom: 16px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+[data-testid="stAlert"] {{
+    border-radius: 16px;
+    border: none;
 }}
 
-.contact-link-item {{
-    color: #1D70B8 !important;
-    text-decoration: none !important;
-    font-weight: 600 !important;
+
+/* ---------------------------------------------------------
+   EXPANDER
+--------------------------------------------------------- */
+
+[data-testid="stExpander"] {{
+    background: rgba(255,255,255,.80);
+    border: 1px solid {BORDER};
+    border-radius: 16px;
+    overflow: hidden;
 }}
 
-.contact-link-item:hover {{
-    text-decoration: underline !important;
+
+/* ---------------------------------------------------------
+   DIVIDER
+--------------------------------------------------------- */
+
+hr {{
+    border: none;
+    border-top: 1px solid #E7E9ED;
+    margin: 1.4rem 0;
 }}
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
+
+/* ---------------------------------------------------------
+   SCROLLBAR
+--------------------------------------------------------- */
+
+::-webkit-scrollbar {{
+    width: 8px;
+}}
+
+::-webkit-scrollbar-track {{
+    background: transparent;
+}}
+
+::-webkit-scrollbar-thumb {{
+    background: #D5D8DD;
+    border-radius: 20px;
+}}
+
+::-webkit-scrollbar-thumb:hover {{
+    background: {ORANGE};
+}}
+
+
+/* ---------------------------------------------------------
+   MOBILE
+--------------------------------------------------------- */
 
 @media (max-width: 900px) {{
-    html, body, [class*="css"] {{
-        font-size: 15px !important;
-    }}
 
     .block-container {{
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-        padding-top: 1rem !important;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-top: .8rem;
+    }}
+
+    h1 {{
+        font-size: 2.15rem !important;
+    }}
+
+    h2 {{
+        font-size: 1.6rem !important;
+    }}
+
+    p {{
+        font-size: 16px;
     }}
 
     [data-testid="stChatMessage"] p {{
-        font-size: 15px !important;
+        font-size: 16px;
     }}
+
 }}
 
 </style>
@@ -293,35 +446,16 @@ h3 {{
 
 
 # ============================================================
-# VERIFICACIÓN DE ARCHIVOS
+# GEMINI
 # ============================================================
 
-logo_existe = Path(
-    LOGO_PATH
-).exists()
-
-avatar_existe = Path(
-    INTI_AVATAR_PATH
-).exists()
-
-
-# ============================================================
-# API KEY
-# ============================================================
-
-api_key = st.secrets.get(
-    "GEMINI_API_KEY",
-    ""
-)
-
+api_key = st.secrets.get("GEMINI_API_KEY", "")
 
 if not api_key:
-
     st.error(
-        "No se encontró GEMINI_API_KEY "
-        "en Streamlit Secrets."
+        "INTI no puede iniciar porque falta la configuración "
+        "del servicio de inteligencia artificial."
     )
-
     st.stop()
 
 
@@ -330,31 +464,23 @@ if not api_key:
 # ============================================================
 
 MENSAJE_INICIAL = {
-
     "role": "assistant",
-
-    "content":
-        "¡Hola! 👋 Soy **INTI**, el asistente virtual "
-        "de **INTILED**.\n\n"
-        "Estoy aquí para orientarte sobre nuestros servicios, "
-        "proyectos y soluciones energéticas.\n\n"
-        "**¿En qué puedo ayudarte hoy?**"
+    "content": (
+        "¡Hola! 👋 Soy **INTI**, tu asistente virtual de **INTILED**.\n\n"
+        "Puedo ayudarte a explorar soluciones de **eficiencia energética, "
+        "energía solar e infraestructura eléctrica**, orientarte sobre "
+        "nuestros servicios o iniciar una solicitud con nuestro equipo.\n\n"
+        "**¿Qué proyecto o necesidad tienes en mente?**"
+    ),
 }
 
 
-# ============================================================
-# SESSION STATE
-# ============================================================
-
 if "messages" not in st.session_state:
-
-    st.session_state.messages = [
-        MENSAJE_INICIAL.copy()
-    ]
+    st.session_state.messages = [MENSAJE_INICIAL.copy()]
 
 
 # ============================================================
-# PROCESAR MENSAJE
+# FUNCIÓN PARA ENVIAR MENSAJES
 # ============================================================
 
 def procesar_mensaje(pregunta):
@@ -367,41 +493,25 @@ def procesar_mensaje(pregunta):
     if not pregunta:
         return
 
-    historial_anterior = list(
-        st.session_state.messages
-    )
+    historial = list(st.session_state.messages)
 
     st.session_state.messages.append(
         {
             "role": "user",
-            "content": pregunta
+            "content": pregunta,
         }
     )
 
-    try:
-
-        respuesta = responder_inti(
-
-            pregunta=pregunta,
-
-            historial=historial_anterior,
-
-            api_key=api_key
-
-        )
-
-    except Exception:
-
-        respuesta = (
-            "⚠️ En este momento tuve un inconveniente "
-            "al procesar tu consulta. "
-            "Por favor intenta nuevamente."
-        )
+    respuesta = responder_inti(
+        pregunta=pregunta,
+        historial=historial,
+        api_key=api_key,
+    )
 
     st.session_state.messages.append(
         {
             "role": "assistant",
-            "content": respuesta
+            "content": respuesta,
         }
     )
 
@@ -412,592 +522,537 @@ def procesar_mensaje(pregunta):
 
 with st.sidebar:
 
-    # --------------------------------------------------------
-    # LOGO
-    # --------------------------------------------------------
-
-    if logo_existe:
-
+    if logo_ok:
         st.image(
-            LOGO_PATH,
-            use_container_width=True
+            LOGO,
+            use_container_width=True,
         )
-
     else:
-
-        st.markdown(
-            "# 🟠 INTILED"
-        )
+        st.markdown("# INTILED")
 
     st.caption(
-        "Soluciones que iluminan el futuro"
+        "ENERGÍA · TECNOLOGÍA · FUTURO"
     )
 
     st.divider()
 
-    # --------------------------------------------------------
-    # NAVEGACIÓN
-    # --------------------------------------------------------
-
-    st.markdown("#### 📌 Navegación")
+    st.caption("NAVEGACIÓN")
 
     if st.button(
-        "💬   Chat con INTI",
+        "◉  Hablar con INTI",
         use_container_width=True,
-        key="sidebar_chat"
+        key="side_chat",
     ):
-
         pass
 
     if st.button(
-        "💡   Servicios",
+        "⚡  Soluciones",
         use_container_width=True,
-        key="sidebar_servicios"
+        key="side_services",
     ):
-
         procesar_mensaje(
-            "Quiero conocer los servicios "
-            "que ofrece INTILED."
+            "Quiero explorar las soluciones y servicios de INTILED."
         )
-
         st.rerun()
 
     if st.button(
-        "📄   Cotización",
+        "◫  Solicitar cotización",
         use_container_width=True,
-        key="sidebar_cotizacion"
+        key="side_quote",
     ):
-
         procesar_mensaje(
-            "Quiero solicitar una cotización "
-            "para un proyecto."
+            "Quiero solicitar una cotización para mi proyecto."
         )
-
         st.rerun()
 
     if st.button(
-        "📅   Agendar cita",
+        "◷  Agendar reunión",
         use_container_width=True,
-        key="sidebar_cita"
+        key="side_meeting",
     ):
-
         procesar_mensaje(
-            "Quiero solicitar una reunión "
-            "o visita técnica."
+            "Quiero solicitar una reunión con el equipo de INTILED."
         )
-
         st.rerun()
 
     if st.button(
-        "🎧   PQR / PQRS",
+        "◎  PQR / PQRS",
         use_container_width=True,
-        key="sidebar_pqr"
+        key="side_pqrs",
     ):
-
         procesar_mensaje(
-            "Necesito orientación para presentar "
-            "una PQR o PQRS."
+            "Quiero realizar una PQR o PQRS."
         )
-
-        st.rerun()
-
-    if st.button(
-        "ⓘ   Acerca de INTILED",
-        use_container_width=True,
-        key="sidebar_acerca"
-    ):
-
-        procesar_mensaje(
-            "Cuéntame sobre INTILED, "
-            "su enfoque y sus servicios."
-        )
-
         st.rerun()
 
     st.divider()
 
-    # --------------------------------------------------------
-    # PERSONAJE INTI
-    # --------------------------------------------------------
+    st.caption("TU ASISTENTE")
 
-    if avatar_existe:
-
+    if avatar_ok:
         st.image(
-            INTI_AVATAR_PATH,
-            use_container_width=True
+            AVATAR,
+            width=145,
         )
 
-    st.markdown(
-        "## INTI"
-    )
+    st.markdown("### INTI")
 
     st.write(
-        "**Tu aliado en soluciones energéticas.**"
+        "**Inteligencia que conecta tus ideas "
+        "con soluciones energéticas.**"
     )
 
     st.caption(
-        "Eficiencia energética · Energía solar · "
-        "Infraestructura eléctrica"
+        "Disponible para orientarte en tus proyectos "
+        "y conectarte con INTILED."
     )
 
     st.divider()
 
-    st.markdown(
-        "🌱 **Comprometidos con un futuro "
-        "más sostenible.**"
-    )
+    st.caption("● SISTEMA OPERATIVO")
+    st.write("🟢 **INTI en línea**")
 
 
 # ============================================================
-# ENCABEZADO PRINCIPAL
+# TOP BAR
 # ============================================================
 
-header_avatar, header_texto, header_estado = st.columns(
-
-    [1, 5, 1.5],
-
-    vertical_alignment="center"
-
+top_logo, top_name, top_status = st.columns(
+    [0.65, 6, 1.4],
+    vertical_alignment="center",
 )
 
+with top_logo:
 
-with header_avatar:
-
-    if avatar_existe:
-
+    if avatar_ok:
         st.image(
-            INTI_AVATAR_PATH,
-            width=115
+            AVATAR,
+            width=72,
         )
-
     else:
-
-        st.markdown(
-            "# 👷🏻‍♂️"
-        )
+        st.markdown("### ⚡")
 
 
-with header_texto:
+with top_name:
 
-    st.markdown(
-        "<h1 style='margin-bottom: 0px;'>INTI</h1>", 
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        "<h3 style='margin-top: 0px; color: #475569;'>Asistente Virtual de INTILED</h3>", 
-        unsafe_allow_html=True
-    )
+    st.markdown("### INTI")
 
     st.caption(
-        "Energía, eficiencia y sostenibilidad "
-        "para un mejor mañana."
+        "INTILED Intelligence · Asistente energético"
     )
 
 
-with header_estado:
+with top_status:
 
     st.success(
-        "● En línea"
-    )
-
-    st.caption(
-        "Listo para ayudarte"
-    )
-
-
-st.divider()
-
-
-# ============================================================
-# ACCESOS RÁPIDOS
-# ============================================================
-
-st.markdown(
-    "### ¿Cómo puedo ayudarte?"
-)
-
-st.caption(
-    "Selecciona una opción o conversa directamente con INTI."
-)
-
-
-c1, c2, c3, c4 = st.columns(
-    4,
-    gap="medium"
-)
-
-
-with c1:
-
-    servicios = st.button(
-
-        "💡 Servicios\n\n"
-        "Conoce nuestras soluciones",
-
-        use_container_width=True,
-
-        key="servicios_superior"
-    )
-
-
-with c2:
-
-    cotizacion = st.button(
-
-        "📄 Cotización\n\n"
-        "Solicita una propuesta",
-
-        use_container_width=True,
-
-        key="cotizacion_superior"
-    )
-
-
-with c3:
-
-    cita = st.button(
-
-        "📅 Agendar cita\n\n"
-        "Reúnete con nuestro equipo",
-
-        use_container_width=True,
-
-        key="cita_superior"
-    )
-
-
-with c4:
-
-    pqr = st.button(
-
-        "🎧 PQR / PQRS\n\n"
-        "Peticiones, quejas o reclamos",
-
-        use_container_width=True,
-
-        key="pqr_superior"
+        "● EN LÍNEA"
     )
 
 
 # ============================================================
-# ACCIONES RÁPIDAS
+# HERO
 # ============================================================
-
-if servicios:
-
-    procesar_mensaje(
-        "Quiero conocer los servicios "
-        "y soluciones que ofrece INTILED."
-    )
-
-    st.rerun()
-
-
-if cotizacion:
-
-    procesar_mensaje(
-        "Quiero solicitar una cotización "
-        "para un proyecto."
-    )
-
-    st.rerun()
-
-
-if cita:
-
-    procesar_mensaje(
-        "Quiero agendar una reunión o visita técnica "
-        "con el equipo de INTILED."
-    )
-
-    st.rerun()
-
-
-if pqr:
-
-    procesar_mensaje(
-        "Necesito orientación para presentar "
-        "una PQR o PQRS."
-    )
-
-    st.rerun()
-
 
 st.write("")
 
-
-# ============================================================
-# CUERPO PRINCIPAL
-# ============================================================
-
-chat_col, info_col = st.columns(
-
-    [3.25, 1.1],
-
-    gap="large"
-
+hero_text, hero_visual = st.columns(
+    [2.8, 1],
+    gap="large",
+    vertical_alignment="center",
 )
+
+
+with hero_text:
+
+    st.caption(
+        "INTILED · INTELLIGENT ENERGY EXPERIENCE"
+    )
+
+    st.markdown(
+        "# Energía inteligente.\n"
+        "Decisiones más brillantes."
+    )
+
+    st.markdown(
+        "Conversa con **INTI**, explora soluciones energéticas "
+        "y convierte una idea en el próximo proyecto de INTILED."
+    )
+
+
+with hero_visual:
+
+    if avatar_ok:
+        st.image(
+            AVATAR,
+            use_container_width=True,
+        )
+
+
+# ============================================================
+# ACCIONES PRINCIPALES
+# ============================================================
+
+st.write("")
+
+st.markdown(
+    "### ¿Qué quieres hacer?"
+)
+
+st.caption(
+    "Elige una ruta o simplemente cuéntale a INTI lo que necesitas."
+)
+
+
+a1, a2, a3, a4 = st.columns(
+    4,
+    gap="medium",
+)
+
+
+with a1:
+
+    accion_servicios = st.button(
+        "⚡  EXPLORAR SOLUCIONES\n\n"
+        "Descubre cómo puede ayudarte INTILED",
+        use_container_width=True,
+        key="action_services",
+    )
+
+
+with a2:
+
+    accion_solar = st.button(
+        "☀️  ENERGÍA SOLAR\n\n"
+        "Explora soluciones fotovoltaicas",
+        use_container_width=True,
+        key="action_solar",
+    )
+
+
+with a3:
+
+    accion_cotizar = st.button(
+        "◫  COTIZAR PROYECTO\n\n"
+        "Cuéntanos qué necesitas",
+        use_container_width=True,
+        key="action_quote",
+    )
+
+
+with a4:
+
+    accion_reunion = st.button(
+        "◷  HABLAR CON EL EQUIPO\n\n"
+        "Solicita una reunión",
+        use_container_width=True,
+        key="action_meeting",
+    )
+
+
+if accion_servicios:
+    procesar_mensaje(
+        "Quiero explorar las soluciones que ofrece INTILED. "
+        "Ayúdame a identificar cuál podría servirme."
+    )
+    st.rerun()
+
+
+if accion_solar:
+    procesar_mensaje(
+        "Estoy interesado en energía solar. "
+        "Quiero conocer qué soluciones puede ofrecer INTILED."
+    )
+    st.rerun()
+
+
+if accion_cotizar:
+    procesar_mensaje(
+        "Tengo un proyecto y quiero solicitar una cotización."
+    )
+    st.rerun()
+
+
+if accion_reunion:
+    procesar_mensaje(
+        "Quiero solicitar una reunión con el equipo de INTILED."
+    )
+    st.rerun()
 
 
 # ============================================================
 # CHAT
 # ============================================================
 
-with chat_col:
+st.write("")
+st.write("")
+
+chat_title, reset_col = st.columns(
+    [6, 1.3],
+    vertical_alignment="center",
+)
+
+
+with chat_title:
 
     st.markdown(
-        "## 💬 Conversa con INTI"
+        "## Conversa con INTI"
     )
 
     st.caption(
-        "Pregúntame sobre nuestros servicios, "
-        "soluciones energéticas o proyectos."
+        "Describe tu necesidad como lo harías con un asesor."
     )
 
-    st.write("")
 
-    # --------------------------------------------------------
-    # MOSTRAR CONVERSACIÓN
-    # --------------------------------------------------------
+with reset_col:
 
-    for mensaje in st.session_state.messages:
-
-        if mensaje["role"] == "assistant":
-
-            if avatar_existe:
-
-                avatar = INTI_AVATAR_PATH
-
-            else:
-
-                avatar = "👷🏻‍♂️"
-
-        else:
-
-            avatar = "👤"
-
-        with st.chat_message(
-
-            mensaje["role"],
-
-            avatar=avatar
-
-        ):
-
-            st.markdown(
-                mensaje["content"]
-            )
-
-    # --------------------------------------------------------
-    # FORMULARIO
-    # --------------------------------------------------------
-
-    st.write("")
-
-    with st.form(
-
-        "formulario_inti",
-
-        clear_on_submit=True
-
+    if st.button(
+        "↻  Nuevo chat",
+        use_container_width=True,
+        key="reset_chat",
     ):
 
-        texto_col, boton_col = st.columns(
+        st.session_state.messages = [
+            MENSAJE_INICIAL.copy()
+        ]
 
-            [8, 1],
+        st.rerun()
 
-            vertical_alignment="bottom"
 
+st.write("")
+
+
+# ============================================================
+# MENSAJES
+# ============================================================
+
+for mensaje in st.session_state.messages:
+
+    role = mensaje.get("role", "assistant")
+    content = mensaje.get("content", "")
+
+    if role == "assistant":
+
+        avatar = (
+            AVATAR
+            if avatar_ok
+            else "⚡"
         )
 
-        with texto_col:
+    else:
 
-            pregunta = st.text_input(
+        avatar = "👤"
 
-                "Mensaje",
+    with st.chat_message(
+        role,
+        avatar=avatar,
+    ):
 
-                placeholder=(
-                    "Escribe tu mensaje para INTI..."
-                ),
+        if role == "assistant":
+            st.caption("INTI · INTILED")
 
-                label_visibility="collapsed"
+        st.markdown(content)
 
-            )
 
-        with boton_col:
+# ============================================================
+# INPUT PREMIUM
+# ============================================================
 
-            enviar = st.form_submit_button(
+st.write("")
 
-                "➤",
+with st.form(
+    "inti_message_form",
+    clear_on_submit=True,
+):
 
-                use_container_width=True
+    input_col, send_col = st.columns(
+        [10, 1],
+        vertical_alignment="bottom",
+    )
 
-            )
+    with input_col:
 
-    if enviar and pregunta.strip():
+        pregunta = st.text_input(
+            "Mensaje",
+            placeholder=(
+                "Cuéntale a INTI qué necesitas..."
+            ),
+            label_visibility="collapsed",
+        )
+
+    with send_col:
+
+        enviar = st.form_submit_button(
+            "➜",
+            use_container_width=True,
+        )
+
+
+if enviar and pregunta.strip():
+
+    procesar_mensaje(
+        pregunta
+    )
+
+    st.rerun()
+
+
+st.caption(
+    "INTI puede orientarte y ayudarte a iniciar solicitudes. "
+    "Las decisiones técnicas, comerciales y contractuales "
+    "son validadas por el equipo de INTILED."
+)
+
+
+# ============================================================
+# DISCOVERY STRIP
+# ============================================================
+
+st.write("")
+st.divider()
+
+st.caption(
+    "EXPLORA EL ECOSISTEMA INTILED"
+)
+
+d1, d2, d3 = st.columns(
+    3,
+    gap="medium",
+)
+
+
+with d1:
+
+    if st.button(
+        "🍃 EFICIENCIA ENERGÉTICA\n\n"
+        "Optimiza el uso de la energía",
+        use_container_width=True,
+        key="discover_efficiency",
+    ):
 
         procesar_mensaje(
-            pregunta
+            "Quiero conocer las soluciones de eficiencia "
+            "energética de INTILED."
         )
 
         st.rerun()
 
-    # --------------------------------------------------------
-    # NUEVA CONVERSACIÓN
-    # --------------------------------------------------------
 
-    espacio, limpiar = st.columns(
-        [5, 2]
-    )
+with d2:
 
-    with limpiar:
+    if st.button(
+        "☀️ GENERACIÓN SOLAR\n\n"
+        "Transforma el sol en energía",
+        use_container_width=True,
+        key="discover_solar",
+    ):
 
-        if st.button(
-
-            "🗑️ Nueva conversación",
-
-            use_container_width=True,
-
-            key="nueva_conversacion"
-
-        ):
-
-            st.session_state.messages = [
-                MENSAJE_INICIAL.copy()
-            ]
-
-            st.rerun()
-
-
-# ============================================================
-# PANEL DERECHO (ESTILIZADO EN TARJETAS BLANCAS)
-# ============================================================
-
-with info_col:
-
-    # --------------------------------------------------------
-    # SOBRE INTI
-    # --------------------------------------------------------
-
-    st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
-    
-    st.markdown("### Sobre INTI")
-
-    if avatar_existe:
-
-        st.image(
-            INTI_AVATAR_PATH,
-            width=105
+        procesar_mensaje(
+            "Quiero conocer las soluciones de generación "
+            "solar de INTILED."
         )
 
+        st.rerun()
+
+
+with d3:
+
+    if st.button(
+        "⚙️ INFRAESTRUCTURA ELÉCTRICA\n\n"
+        "Soluciones para proyectos eléctricos",
+        use_container_width=True,
+        key="discover_electric",
+    ):
+
+        procesar_mensaje(
+            "Quiero conocer las soluciones de infraestructura "
+            "eléctrica de INTILED."
+        )
+
+        st.rerun()
+
+
+# ============================================================
+# CONTACTO — MINIMAL
+# ============================================================
+
+st.write("")
+st.divider()
+
+contacto, horario, identidad = st.columns(
+    [1.4, 1, 1.2],
+    gap="large",
+)
+
+
+with contacto:
+
+    st.markdown(
+        "### INTILED S.A.S. BIC"
+    )
+
     st.write(
-        "Soy **INTI**, el asistente virtual de **INTILED**."
+        "📍 Calle 11 #36-46, La Castellana  \n"
+        "Pasto, Nariño, Colombia"
     )
 
-    st.caption(
-        "Puedo orientarte sobre nuestros servicios, "
-        "proyectos y soluciones energéticas."
+    st.write(
+        "✉️ comercial@intiled.com.co"
     )
 
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    # --------------------------------------------------------
-    # CONTACTO DIRECTO
-    # --------------------------------------------------------
+with horario:
 
-    st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
+    st.markdown(
+        "### Atención"
+    )
 
-    st.markdown("### 📍 Contacto Directo")
+    st.write(
+        "**Lunes a viernes**  \n"
+        "8:00 a. m. – 6:00 p. m."
+    )
 
-    st.write("**INTILED S.A.S. BIC**")
+    st.write(
+        "**Sábados**  \n"
+        "8:00 a. m. – 12:00 p. m."
+    )
 
-    st.write("📍 Calle 11 #36-46, La Castellana")
 
-    st.caption("Pasto, Nariño, Colombia")
+with identidad:
 
-    st.markdown("<hr style='border:none; border-top:1px solid #E2E8F0; margin:10px 0;'>", unsafe_allow_html=True)
+    st.markdown(
+        "### Energía con propósito"
+    )
 
-    st.markdown("📞 <a class='contact-link-item' href='tel:+576027337893'>+57 602 733 7893</a>", unsafe_allow_html=True)
-
-    st.markdown("📱 <a class='contact-link-item' href='https://wa.me/573046702584'>+57 304 670 2584</a>", unsafe_allow_html=True)
-
-    st.markdown("✉️ <a class='contact-link-item' href='mailto:comercial@intiled.com.co'>comercial@intiled.com.co</a>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # HORARIOS
-    # --------------------------------------------------------
-
-    st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
-
-    st.markdown("### 🕐 Horario de Atención")
-
-    st.write("**Lunes a viernes:** 8:00 a. m. – 6:00 p. m.")
-
-    st.write("**Sábados:** 8:00 a. m. – 12:00 p. m.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # SOLUCIONES
-    # --------------------------------------------------------
-
-    st.markdown("<div class='info-card-box'>", unsafe_allow_html=True)
-
-    st.markdown("### ☀️ Soluciones")
-
-    st.caption("Eficiencia energética, energía solar, infraestructura eléctrica y sostenibilidad.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.write(
+        "Tecnología, eficiencia y sostenibilidad "
+        "para transformar proyectos en soluciones."
+    )
 
 
 # ============================================================
 # FOOTER
 # ============================================================
 
+st.write("")
 st.divider()
 
-f1, f2, f3, f4, f5 = st.columns(
-    5
+year = datetime.now().year
+
+footer_left, footer_right = st.columns(
+    [4, 2],
 )
 
-with f1:
+
+with footer_left:
 
     st.caption(
-        "🍃 Eficiencia energética"
+        f"© {year} INTILED S.A.S. BIC · "
+        "Todos los derechos reservados."
     )
 
-with f2:
+
+with footer_right:
 
     st.caption(
-        "☀️ Energía solar"
+        "INTI · Intelligent Energy Experience ⚡"
     )
-
-with f3:
-
-    st.caption(
-        "⚙️ Infraestructura eléctrica"
-    )
-
-with f4:
-
-    st.caption(
-        "👥 Acompañamiento técnico"
-    )
-
-with f5:
-
-    st.caption(
-        "🌱 Sostenibilidad"
-    )
-
-st.write("")
-
-año = datetime.now().year
-
-st.caption(
-    f"© {año} INTILED S.A.S. BIC · "
-    "INTI — Asistente Virtual Inteligente"
-)
