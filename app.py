@@ -1,20 +1,32 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, date, time, timedelta
 from pathlib import Path
 
 from modules.inti_ai import responder_inti
+
 from modules.quotations import (
     calcular_sistema_fotovoltaico,
     generar_resumen_para_chat,
 )
+
 from modules.quotation_pdf import (
     generar_pdf_fotovoltaico,
     nombre_archivo_pdf,
 )
 
+from modules.appointments import (
+    crear_solicitud_reunion,
+    marcar_como_enviada,
+)
+
+from modules.email_service import (
+    enviar_solicitud_a_funcionario,
+    enviar_recepcion_a_usuario,
+)
+
 
 # ============================================================
-# CONFIGURACIÓN
+# CONFIGURACIÓN GENERAL
 # ============================================================
 
 st.set_page_config(
@@ -131,7 +143,9 @@ p {{
 }}
 
 
-/* SIDEBAR */
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 
 [data-testid="stSidebar"] {{
     background:
@@ -189,7 +203,9 @@ p {{
 }}
 
 
-/* BOTONES */
+/* =========================================================
+   BOTONES
+   ========================================================= */
 
 .stButton > button {{
     border-radius: 17px;
@@ -213,7 +229,9 @@ p {{
 }}
 
 
-/* CHAT */
+/* =========================================================
+   CHAT
+   ========================================================= */
 
 [data-testid="stChatMessage"] {{
     background: rgba(255,255,255,.95);
@@ -231,13 +249,15 @@ p {{
 }}
 
 
-/* FORM */
+/* =========================================================
+   FORMULARIOS
+   ========================================================= */
 
 [data-testid="stForm"] {{
     background: rgba(255,255,255,.96);
     border: 1px solid rgba(224,228,234,.95);
     border-radius: 22px;
-    padding: 14px;
+    padding: 18px;
     box-shadow:
         0 18px 50px rgba(16,24,40,.09),
         0 3px 12px rgba(255,101,0,.05);
@@ -253,7 +273,16 @@ p {{
     padding-left: 17px;
 }}
 
-.stTextInput input:focus {{
+.stTextArea textarea {{
+    border: 1px solid #E6E9ED !important;
+    border-radius: 15px;
+    background: #F7F8FA;
+    color: {TEXT};
+    font-size: 16px;
+}}
+
+.stTextInput input:focus,
+.stTextArea textarea:focus {{
     background: #FFFFFF;
     border-color: {ORANGE} !important;
     box-shadow: 0 0 0 3px rgba(255,101,0,.10) !important;
@@ -280,7 +309,9 @@ p {{
 }}
 
 
-/* MÉTRICAS */
+/* =========================================================
+   MÉTRICAS
+   ========================================================= */
 
 [data-testid="stMetric"] {{
     background: rgba(255,255,255,.96);
@@ -299,7 +330,9 @@ p {{
 }}
 
 
-/* DOWNLOAD */
+/* =========================================================
+   DOWNLOAD
+   ========================================================= */
 
 .stDownloadButton > button {{
     width: 100%;
@@ -324,7 +357,9 @@ p {{
 }}
 
 
-/* MÓVIL */
+/* =========================================================
+   MÓVIL
+   ========================================================= */
 
 @media (max-width: 900px) {{
 
@@ -392,7 +427,6 @@ p {{
 
         border-radius: 20px !important;
         padding: 16px !important;
-        box-shadow: 0 15px 35px rgba(0,0,0,.25) !important;
     }}
 
     [data-testid="stChatMessage"] p,
@@ -405,16 +439,18 @@ p {{
         background: rgba(15,21,28,.97) !important;
         border: 1px solid rgba(255,255,255,.10) !important;
         border-radius: 20px !important;
-        padding: 10px !important;
+        padding: 14px !important;
     }}
 
-    .stTextInput input {{
+    .stTextInput input,
+    .stTextArea textarea {{
         background: #171D24 !important;
         color: #FFFFFF !important;
         border: 1px solid rgba(255,255,255,.12) !important;
     }}
 
-    .stTextInput input::placeholder {{
+    .stTextInput input::placeholder,
+    .stTextArea textarea::placeholder {{
         color: #89939E !important;
     }}
 
@@ -443,10 +479,6 @@ p {{
         color: #FF8A00 !important;
     }}
 
-    [data-testid="stAlert"] * {{
-        color: inherit !important;
-    }}
-
 }}
 
 </style>
@@ -456,7 +488,7 @@ p {{
 
 
 # ============================================================
-# API
+# CONFIGURACIÓN GEMINI
 # ============================================================
 
 api_key = st.secrets.get(
@@ -473,6 +505,38 @@ if not api_key:
 
 
 # ============================================================
+# CONFIGURACIÓN EMAIL
+# ============================================================
+
+EMAIL_SMTP_HOST = st.secrets.get(
+    "EMAIL_SMTP_HOST",
+    "",
+)
+
+EMAIL_SMTP_PORT = int(
+    st.secrets.get(
+        "EMAIL_SMTP_PORT",
+        465,
+    )
+)
+
+EMAIL_USER = st.secrets.get(
+    "EMAIL_USER",
+    "",
+)
+
+EMAIL_PASSWORD = st.secrets.get(
+    "EMAIL_PASSWORD",
+    "",
+)
+
+EMAIL_FUNCIONARIO = st.secrets.get(
+    "EMAIL_FUNCIONARIO",
+    "",
+)
+
+
+# ============================================================
 # MENSAJE INICIAL
 # ============================================================
 
@@ -481,16 +545,16 @@ MENSAJE_INICIAL = {
     "content": (
         "¡Hola! 👋 Soy **INTI**, tu asistente virtual de **INTILED**.\n\n"
         "Puedo ayudarte a explorar soluciones de **eficiencia energética, "
-        "energía solar e infraestructura eléctrica**, orientarte sobre "
-        "nuestros servicios o ayudarte a realizar una "
-        "**estimación teórica preliminar** de un proyecto solar.\n\n"
+        "energía solar e infraestructura eléctrica**, realizar una "
+        "**estimación teórica preliminar** de un proyecto solar o "
+        "tramitar una **solicitud de reunión** con nuestro equipo.\n\n"
         "**¿Qué proyecto o necesidad tienes en mente?**"
     ),
 }
 
 
 # ============================================================
-# ESTADOS
+# SESSION STATE
 # ============================================================
 
 if "messages" not in st.session_state:
@@ -501,6 +565,9 @@ if "messages" not in st.session_state:
 if "modo_estimacion" not in st.session_state:
     st.session_state.modo_estimacion = False
 
+if "modo_reunion" not in st.session_state:
+    st.session_state.modo_reunion = False
+
 if "resultado_solar" not in st.session_state:
     st.session_state.resultado_solar = None
 
@@ -510,9 +577,15 @@ if "pdf_solar" not in st.session_state:
 if "datos_estimacion" not in st.session_state:
     st.session_state.datos_estimacion = {}
 
+if "solicitud_reunion" not in st.session_state:
+    st.session_state.solicitud_reunion = None
+
+if "reunion_enviada" not in st.session_state:
+    st.session_state.reunion_enviada = False
+
 
 # ============================================================
-# FUNCIONES
+# FUNCIONES GENERALES
 # ============================================================
 
 def procesar_mensaje(pregunta):
@@ -560,16 +633,22 @@ def procesar_mensaje(pregunta):
     )
 
 
+def ir_chat():
+
+    st.session_state.modo_estimacion = False
+    st.session_state.modo_reunion = False
+
+
 def abrir_estimacion():
 
     st.session_state.modo_estimacion = True
-    st.session_state.resultado_solar = None
-    st.session_state.pdf_solar = None
+    st.session_state.modo_reunion = False
 
 
-def cerrar_estimacion():
+def abrir_reunion():
 
     st.session_state.modo_estimacion = False
+    st.session_state.modo_reunion = True
 
 
 def nueva_estimacion():
@@ -579,6 +658,12 @@ def nueva_estimacion():
     st.session_state.datos_estimacion = {}
 
 
+def nueva_solicitud_reunion():
+
+    st.session_state.solicitud_reunion = None
+    st.session_state.reunion_enviada = False
+
+
 def nueva_conversacion():
 
     st.session_state.messages = [
@@ -586,9 +671,14 @@ def nueva_conversacion():
     ]
 
     st.session_state.modo_estimacion = False
+    st.session_state.modo_reunion = False
+
     st.session_state.resultado_solar = None
     st.session_state.pdf_solar = None
     st.session_state.datos_estimacion = {}
+
+    st.session_state.solicitud_reunion = None
+    st.session_state.reunion_enviada = False
 
 
 # ============================================================
@@ -621,7 +711,7 @@ with st.sidebar:
         use_container_width=True,
         key="side_chat",
     ):
-        cerrar_estimacion()
+        ir_chat()
         st.rerun()
 
     if st.button(
@@ -629,7 +719,8 @@ with st.sidebar:
         use_container_width=True,
         key="side_services",
     ):
-        cerrar_estimacion()
+
+        ir_chat()
 
         procesar_mensaje(
             "Quiero explorar las soluciones "
@@ -643,21 +734,17 @@ with st.sidebar:
         use_container_width=True,
         key="side_quote",
     ):
+
         abrir_estimacion()
         st.rerun()
 
     if st.button(
-        "◷  Agendar reunión",
+        "📅  Solicitar reunión",
         use_container_width=True,
         key="side_meeting",
     ):
-        cerrar_estimacion()
 
-        procesar_mensaje(
-            "Quiero solicitar una reunión "
-            "con el equipo de INTILED."
-        )
-
+        abrir_reunion()
         st.rerun()
 
     if st.button(
@@ -665,10 +752,11 @@ with st.sidebar:
         use_container_width=True,
         key="side_pqrs",
     ):
-        cerrar_estimacion()
+
+        ir_chat()
 
         procesar_mensaje(
-            "Quiero realizar una PQR o PQRS."
+            "Quiero orientación para realizar una PQR o PQRS."
         )
 
         st.rerun()
@@ -692,8 +780,8 @@ with st.sidebar:
     )
 
     st.caption(
-        "Disponible para orientarte en tus proyectos "
-        "y conectarte con INTILED."
+        "Orientación inicial, estimaciones "
+        "y conexión con INTILED."
     )
 
     st.divider()
@@ -814,7 +902,7 @@ with a3:
 with a4:
 
     accion_reunion = st.button(
-        "◷ HABLAR CON EL EQUIPO",
+        "📅 SOLICITAR REUNIÓN",
         use_container_width=True,
         key="action_meeting",
     )
@@ -822,7 +910,7 @@ with a4:
 
 if accion_servicios:
 
-    cerrar_estimacion()
+    ir_chat()
 
     procesar_mensaje(
         "Quiero explorar las soluciones "
@@ -834,7 +922,7 @@ if accion_servicios:
 
 if accion_solar:
 
-    cerrar_estimacion()
+    ir_chat()
 
     procesar_mensaje(
         "Estoy interesado en energía solar "
@@ -853,21 +941,391 @@ if accion_estimar:
 
 if accion_reunion:
 
-    cerrar_estimacion()
+    abrir_reunion()
+    st.rerun()
 
-    procesar_mensaje(
-        "Quiero solicitar una reunión "
-        "con el equipo de INTILED."
+
+# ============================================================
+# MODO REUNIÓN
+# ============================================================
+
+if st.session_state.modo_reunion:
+
+    st.write("")
+    st.divider()
+
+    st.caption(
+        "INTI CONNECT · SOLICITUD DE REUNIÓN"
     )
 
-    st.rerun()
+    st.markdown(
+        "## 📅 Conecta con nuestro equipo"
+    )
+
+    st.markdown(
+        "Cuéntanos brevemente qué necesitas y "
+        "**INTI enviará tu solicitud al equipo de INTILED**."
+    )
+
+    st.info(
+        "La fecha y hora que indiques son **tentativas**. "
+        "La reunión únicamente quedará confirmada cuando "
+        "el equipo de INTILED valide su disponibilidad."
+    )
+
+    # --------------------------------------------------------
+    # SI TODAVÍA NO SE HA ENVIADO
+    # --------------------------------------------------------
+
+    if not st.session_state.reunion_enviada:
+
+        with st.form(
+            "form_solicitud_reunion"
+        ):
+
+            st.markdown(
+                "### Datos de contacto"
+            )
+
+            c1, c2 = st.columns(2)
+
+            with c1:
+
+                nombre_reunion = st.text_input(
+                    "👤 Nombre completo *",
+                    placeholder="Ejemplo: Juan Pérez",
+                )
+
+                correo_reunion = st.text_input(
+                    "📧 Correo electrónico *",
+                    placeholder="nombre@empresa.com",
+                )
+
+            with c2:
+
+                telefono_reunion = st.text_input(
+                    "📱 Teléfono",
+                    placeholder="Opcional",
+                )
+
+                empresa_reunion = st.text_input(
+                    "🏢 Empresa / Entidad",
+                    placeholder="Opcional",
+                )
+
+            st.write("")
+
+            st.markdown(
+                "### ¿De qué quieres hablar?"
+            )
+
+            motivo_reunion = st.text_area(
+                "Motivo de la reunión *",
+                placeholder=(
+                    "Ejemplo: Quiero revisar la viabilidad "
+                    "de un proyecto de generación solar "
+                    "para mi empresa..."
+                ),
+                height=130,
+            )
+
+            st.write("")
+
+            st.markdown(
+                "### Propón una fecha"
+            )
+
+            st.caption(
+                "Esta información es una propuesta inicial "
+                "y está sujeta a disponibilidad."
+            )
+
+            f1, f2 = st.columns(2)
+
+            with f1:
+
+                fecha_reunion = st.date_input(
+                    "📆 Fecha tentativa *",
+                    min_value=date.today(),
+                    value=date.today() + timedelta(days=1),
+                    format="DD/MM/YYYY",
+                )
+
+            with f2:
+
+                hora_reunion = st.time_input(
+                    "🕐 Hora tentativa *",
+                    value=time(
+                        hour=10,
+                        minute=0,
+                    ),
+                )
+
+            st.write("")
+
+            consentimiento = st.checkbox(
+                "Autorizo el uso de los datos suministrados "
+                "para gestionar esta solicitud de contacto "
+                "y reunión con INTILED."
+            )
+
+            enviar_reunion = st.form_submit_button(
+                "📨 ENVIAR SOLICITUD DE REUNIÓN",
+                use_container_width=True,
+            )
+
+        # ----------------------------------------------------
+        # PROCESAR SOLICITUD
+        # ----------------------------------------------------
+
+        if enviar_reunion:
+
+            if not nombre_reunion.strip():
+
+                st.error(
+                    "Por favor ingresa tu nombre."
+                )
+
+            elif not correo_reunion.strip():
+
+                st.error(
+                    "Por favor ingresa tu correo electrónico."
+                )
+
+            elif not motivo_reunion.strip():
+
+                st.error(
+                    "Por favor indícanos el motivo de la reunión."
+                )
+
+            elif not consentimiento:
+
+                st.error(
+                    "Debes autorizar el uso de los datos "
+                    "para poder tramitar la solicitud."
+                )
+
+            elif (
+                not EMAIL_SMTP_HOST
+                or not EMAIL_USER
+                or not EMAIL_PASSWORD
+                or not EMAIL_FUNCIONARIO
+            ):
+
+                st.error(
+                    "El servicio de reuniones todavía no tiene "
+                    "configurado correctamente el correo de INTILED."
+                )
+
+            else:
+
+                try:
+
+                    fecha_texto = (
+                        fecha_reunion.strftime(
+                            "%d/%m/%Y"
+                        )
+                    )
+
+                    hora_texto = (
+                        hora_reunion.strftime(
+                            "%I:%M %p"
+                        )
+                    )
+
+                    with st.spinner(
+                        "INTI está tramitando tu solicitud..."
+                    ):
+
+                        # ====================================
+                        # CREAR SOLICITUD
+                        # ====================================
+
+                        solicitud = crear_solicitud_reunion(
+                            nombre=nombre_reunion,
+                            correo=correo_reunion,
+                            telefono=telefono_reunion,
+                            empresa=empresa_reunion,
+                            motivo=motivo_reunion,
+                            fecha_propuesta=fecha_texto,
+                            hora_propuesta=hora_texto,
+                            funcionario="Equipo INTILED",
+                            correo_funcionario=EMAIL_FUNCIONARIO,
+                        )
+
+                        # ====================================
+                        # 1. ENVIAR AL FUNCIONARIO
+                        # ====================================
+
+                        enviar_solicitud_a_funcionario(
+                            solicitud=solicitud,
+                            smtp_host=EMAIL_SMTP_HOST,
+                            smtp_port=EMAIL_SMTP_PORT,
+                            usuario=EMAIL_USER,
+                            password=EMAIL_PASSWORD,
+                            correo_funcionario=EMAIL_FUNCIONARIO,
+                        )
+
+                        # ====================================
+                        # MARCAR COMO ENVIADA
+                        # ====================================
+
+                        solicitud = marcar_como_enviada(
+                            solicitud
+                        )
+
+                        # ====================================
+                        # 2. ACUSE AL USUARIO
+                        # ====================================
+
+                        enviar_recepcion_a_usuario(
+                            solicitud=solicitud,
+                            smtp_host=EMAIL_SMTP_HOST,
+                            smtp_port=EMAIL_SMTP_PORT,
+                            usuario=EMAIL_USER,
+                            password=EMAIL_PASSWORD,
+                        )
+
+                        # ====================================
+                        # GUARDAR EN SESIÓN
+                        # ====================================
+
+                        st.session_state.solicitud_reunion = (
+                            solicitud
+                        )
+
+                        st.session_state.reunion_enviada = True
+
+                    st.rerun()
+
+                except Exception as error:
+
+                    st.error(
+                        "❌ No fue posible enviar la solicitud."
+                    )
+
+                    st.write(
+                        "INTI no indicará que la solicitud fue "
+                        "enviada porque el servidor de correo "
+                        "no confirmó correctamente el proceso."
+                    )
+
+                    # Durante esta fase piloto mostramos el error
+                    # para poder diagnosticar Hostinger.
+                    st.code(
+                        f"{type(error).__name__}: {error}"
+                    )
+
+
+    # --------------------------------------------------------
+    # SOLICITUD ENVIADA CORRECTAMENTE
+    # --------------------------------------------------------
+
+    else:
+
+        solicitud = (
+            st.session_state.solicitud_reunion
+        )
+
+        if solicitud:
+
+            st.success(
+                "✓ Solicitud enviada correctamente"
+            )
+
+            st.markdown(
+                "## Tu solicitud está en revisión"
+            )
+
+            st.markdown(
+                f"""
+Hola **{solicitud.nombre}**. INTI ha enviado
+correctamente tu solicitud al equipo de INTILED.
+
+**Código de seguimiento:** `{solicitud.codigo}`
+"""
+            )
+
+            st.write("")
+
+            r1, r2 = st.columns(2)
+
+            with r1:
+
+                st.markdown(
+                    "#### 📆 Fecha propuesta"
+                )
+
+                st.write(
+                    solicitud.fecha_propuesta
+                )
+
+            with r2:
+
+                st.markdown(
+                    "#### 🕐 Hora propuesta"
+                )
+
+                st.write(
+                    solicitud.hora_propuesta
+                )
+
+            st.write("")
+
+            st.markdown(
+                "#### 💬 Motivo"
+            )
+
+            st.write(
+                solicitud.motivo
+            )
+
+            st.write("")
+
+            st.warning(
+                "⚠️ **La reunión todavía NO está confirmada.**\n\n"
+                "La solicitud fue remitida al equipo de INTILED "
+                "para revisar disponibilidad. Recibirás la "
+                "respuesta en el correo electrónico que registraste."
+            )
+
+            st.info(
+                f"📧 Se envió un comprobante de recepción a "
+                f"**{solicitud.correo}**."
+            )
+
+            st.write("")
+
+            b1, b2 = st.columns(2)
+
+            with b1:
+
+                if st.button(
+                    "💬 VOLVER A INTI",
+                    use_container_width=True,
+                    key="meeting_back_chat",
+                ):
+
+                    ir_chat()
+                    st.rerun()
+
+            with b2:
+
+                if st.button(
+                    "＋ NUEVA SOLICITUD",
+                    use_container_width=True,
+                    key="meeting_new",
+                ):
+
+                    nueva_solicitud_reunion()
+                    st.rerun()
 
 
 # ============================================================
 # MODO ESTIMACIÓN
 # ============================================================
 
-if st.session_state.modo_estimacion:
+elif st.session_state.modo_estimacion:
 
     st.write("")
     st.divider()
@@ -896,9 +1354,9 @@ if st.session_state.modo_estimacion:
 
     st.write("")
 
-    # ========================================================
-    # FORMULARIO DE ESTIMACIÓN
-    # ========================================================
+    # --------------------------------------------------------
+    # FORMULARIO SOLAR
+    # --------------------------------------------------------
 
     with st.form(
         "form_estimacion_solar"
@@ -974,9 +1432,9 @@ if st.session_state.modo_estimacion:
         )
 
 
-    # ========================================================
-    # EJECUTAR CÁLCULO
-    # ========================================================
+    # --------------------------------------------------------
+    # CALCULAR
+    # --------------------------------------------------------
 
     if calcular:
 
@@ -1033,9 +1491,9 @@ if st.session_state.modo_estimacion:
             )
 
 
-    # ========================================================
-    # RESULTADOS
-    # ========================================================
+    # --------------------------------------------------------
+    # RESULTADO SOLAR
+    # --------------------------------------------------------
 
     resultado = st.session_state.resultado_solar
 
@@ -1146,29 +1604,21 @@ if st.session_state.modo_estimacion:
 
 ⚙️ Factor global de desempeño: **{resultado.performance_ratio * 100:.0f}%**
 
-🔋 Potencia de módulo utilizada para el ejercicio: **{resultado.potencia_panel_w:.0f} W**
+🔋 Potencia de módulo utilizada: **{resultado.potencia_panel_w:.0f} W**
 
-🎯 Cobertura objetivo seleccionada: **{resultado.porcentaje_cobertura_objetivo:.0f}%**
+🎯 Cobertura objetivo: **{resultado.porcentaje_cobertura_objetivo:.0f}%**
 
 Estos parámetros corresponden a un ejercicio simplificado y
 deben validarse para cada proyecto.
 """
         )
 
-        # ====================================================
-        # PDF
-        # ====================================================
-
         if st.session_state.pdf_solar:
 
             st.write("")
+
             st.markdown(
                 "### 📄 Informe de la simulación"
-            )
-
-            st.caption(
-                "Descarga el resultado preliminar generado "
-                "por INTI."
             )
 
             st.download_button(
@@ -1186,18 +1636,17 @@ deben validarse para cada proyecto.
         st.warning(
             "Este resultado **NO corresponde a una cotización "
             "oficial de INTILED**. La selección definitiva de "
-            "equipos, ingeniería, costos, condiciones de "
-            "instalación y viabilidad deben ser revisados "
-            "por profesionales autorizados."
+            "equipos, ingeniería, costos y condiciones de "
+            "instalación deben ser revisados por profesionales."
         )
 
         st.markdown(
-            "### ¿Quieres llevar este ejercicio a un proyecto real?"
+            "### ¿Quieres que revisemos tu proyecto?"
         )
 
         st.write(
-            "El siguiente paso recomendado es solicitar una "
-            "revisión con el equipo técnico y comercial de INTILED."
+            "Puedes enviar esta información al equipo de INTILED "
+            "mediante una solicitud de reunión."
         )
 
         c1, c2 = st.columns(2)
@@ -1205,20 +1654,12 @@ deben validarse para cada proyecto.
         with c1:
 
             if st.button(
-                "👨‍💼 HABLAR CON EL EQUIPO",
+                "📅 SOLICITAR REVISIÓN CON INTILED",
                 use_container_width=True,
                 key="result_contact",
             ):
 
-                cerrar_estimacion()
-
-                procesar_mensaje(
-                    "Ya realicé una estimación teórica de un "
-                    "sistema solar con INTI y quiero comunicarme "
-                    "con el equipo de INTILED para revisar "
-                    "el proyecto."
-                )
-
+                abrir_reunion()
                 st.rerun()
 
         with c2:
@@ -1271,10 +1712,6 @@ else:
 
     st.write("")
 
-    # ========================================================
-    # MENSAJES
-    # ========================================================
-
     for mensaje in st.session_state.messages:
 
         role = mensaje.get(
@@ -1313,10 +1750,6 @@ else:
             st.markdown(
                 content
             )
-
-    # ========================================================
-    # INPUT CHAT
-    # ========================================================
 
     st.write("")
 
@@ -1375,7 +1808,7 @@ with d1:
         key="discover_efficiency",
     ):
 
-        cerrar_estimacion()
+        ir_chat()
 
         procesar_mensaje(
             "Quiero conocer las soluciones de "
@@ -1392,7 +1825,7 @@ with d2:
         key="discover_solar",
     ):
 
-        cerrar_estimacion()
+        ir_chat()
 
         procesar_mensaje(
             "Quiero conocer las soluciones "
@@ -1409,7 +1842,7 @@ with d3:
         key="discover_electric",
     ):
 
-        cerrar_estimacion()
+        ir_chat()
 
         procesar_mensaje(
             "Quiero conocer las soluciones "
