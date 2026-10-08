@@ -2,3 +2,4 @@ streamlit
 requests
 streamlit-lottie
 google-genai
+reportlab
